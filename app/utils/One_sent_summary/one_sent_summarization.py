@@ -7,9 +7,7 @@ import time
 import pandas as pd
 from tqdm import tqdm
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-tokenizer = PreTrainedTokenizerFast.from_pretrained("digit82/kobart-summarization")
-model = BartForConditionalGeneration.from_pretrained("digit82/kobart-summarization")
+
 
 import os
 import sys
@@ -24,10 +22,11 @@ stopwords = f.read().splitlines()
 
 
 class SummaryGenerater:
-    def __init__(self, model, tokenizer):
-        self.model = model
-        self.tokenizer = tokenizer
-        self.model.to(device)
+    def __init__(self):
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.tokenizer = PreTrainedTokenizerFast.from_pretrained("digit82/kobart-summarization")
+        self.model = BartForConditionalGeneration.from_pretrained("digit82/kobart-summarization")
+        self.model.to(self.device)
 
     def hardVotingCategory(self, df: pd.DataFrame) -> pd.DataFrame:
         topic_idx = sorted(df["topic"].unique())
@@ -82,7 +81,7 @@ class SummaryGenerater:
             topic_context = list(df[df["topic"] == topic_n]["concat_text"])
             # s = time.time()
             input_ids = self.tokenizer.encode(".".join(topic_context))
-            summary_ids = self.model.generate(torch.tensor([input_ids[:1020]]).to(device), num_beams=3, max_length=256, eos_token_id=1)
+            summary_ids = self.model.generate(torch.tensor([input_ids[:1020]]).to(self.device), num_beams=3, max_length=256, eos_token_id=1)
             summary_text = self.tokenizer.decode(summary_ids.squeeze().tolist(), skip_special_tokens=True)
             summary_dict[topic_n] = summary_text
             # print("================   Topic #: ", topic_n)
@@ -100,10 +99,11 @@ class SummaryGenerater:
         return summary_df
 
 
-SG = SummaryGenerater(model, tokenizer)
+
 
 
 def summary_one_sent(df):
+    SG = SummaryGenerater()
     topic_df = SG.summary(df)
     return topic_df
 

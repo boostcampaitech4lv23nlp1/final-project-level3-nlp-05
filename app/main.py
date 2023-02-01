@@ -12,12 +12,13 @@ from fastapi.encoders import jsonable_encoder
 from omegaconf import OmegaConf
 from app.utils.Bigkindscrawl import bigkinds_crawl
 from app.utils.BERTopic.bertopic_model import bertopic_modeling
-from app.utils.One_sent_summary.one_sent_summarization import summary_one_sent
+from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
 from app.utils.KorBertSum.src.extract_topk_summarization import extract_topk_summarization
 from app.utils.KorBertSum.src.topic_summary import make_summary_paragraph
-from app.utils.SentimentAnalysis.sapipeline import sentiment_analysis
+from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
 app = FastAPI()
-
+SG = SummaryGenerater()
+TSA = TopicSentimentAnalysis()
 def split_category_df(news_df: pd.DataFrame) -> pd.DataFrame:
     """
     news_df를 category1 기준으로 "경제", "IT_과학", 그 외로 나누는 함수
@@ -66,10 +67,11 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
     times[2] = time.time()
     #4. 한줄요약
     print("summary one sentence")
-    topic_df = summary_one_sent(news_df)
+    topic_df = SG.summary(news_df)
     times[3] = time.time()
-
-    topic_df = sentiment_analysis(topic_df)
+    #5. 감성분석
+    print("sentiment analysis")
+    topic_df = TSA.sentiment_analysis(topic_df)
     times[4] = time.time()
     print("crwal_end")
     print(f'crawl : {times[1] - times[0]}\nBERTtopic: {times[2]-times[1]}\nonesent: {times[3]-times[2]}\nsentimen analysis: {times[4]-times[3]}')
