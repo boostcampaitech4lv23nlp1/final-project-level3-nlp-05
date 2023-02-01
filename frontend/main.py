@@ -8,6 +8,7 @@ import streamlit as st
 from streamlit import session_state as state
 from streamlit.components.v1 import html
 from annotated_text import annotated_text
+from streamlit_elements import elements, sync, event, mui, dashboard
 
 from confirm_button_hack import cache_on_button_press
 # 페이지 타이틀
@@ -53,9 +54,10 @@ def search_page():
             key = 'company_name'
         )
         
+        _, sentiment_col, category_col, _ = st.columns([1, 3, 5, 1])
         _, col0, col1, col2, col3, _ = st.columns([2, 6, 3.5, 3.5, 3, 2])
         # checkbox options for article sentiment
-        col1.multiselect(
+        sentiment_col.multiselect(
             "기사 감성 선택",
             ["긍정", "부정", "중립"],
             default=state['options_sentiment'],
@@ -63,7 +65,7 @@ def search_page():
             key="options_sentiment"
         )
         # checkbox options for article category
-        col2.multiselect(
+        category_col.multiselect(
             "기사 카테고리 선택",
             ["정치", "경제", "사회", "문화", "국제", "지역", "스포츠", "IT_과학"],
             default=state['options_category'],
@@ -121,7 +123,7 @@ def search_page():
             )  # 🔥
             sentiment_dict = {'긍정':'positive', '중립':'neutral', '부정':'negative'}
             label_to_icon = {"negative": "😕", "neutral": "😐", "positive": "😃"}
-            sentiment_color = {'positive':'#4593E7', 'negative':'#E52828', 'neutral':'#21E146'}
+            sentiment_color = {'positive':'#4593E7', 'negative':'#E52828', 'neutral':'#BDBDBD'}
             # 뉴스가 없으면 결과가 없다고 반환
             if len(state["news_df"]) == 0:
                 _, col_line, _ = st.columns([1, 8, 1])
@@ -135,37 +137,43 @@ def search_page():
                 topic_df_filtered = topic_df_filtered.loc[topic_df_filtered['sentiment'].isin(options_sentiment)]
                 # sort by category
                 category1_sort_list = list(Counter(topic_df_filtered['hard_category1']).keys())
+                counter = Counter(topic_df_filtered['hard_category1'])
+                emoji = {"정치":'🏛', "경제":'💰', "사회":'🤷', "문화":'🎎', "국제":'🌐', "지역":'🚞', "스포츠":'⚽', "IT_과학":'🔬'}
+                category1_sort_list2 = []
                 if '경제' in category1_sort_list: 
                     category1_sort_list.remove('경제')
                     category1_sort_list = ['경제'] + category1_sort_list
+                for cat in category1_sort_list:
+                    category1_sort_list2.append(emoji[cat]+' '+cat+f'({counter[cat]})')
                 
-                for cat1 in category1_sort_list:
-                    now_topic_df = topic_df_filtered[topic_df_filtered['hard_category1'] == cat1]
-                    now_topic_df = now_topic_df.sort_values(by=['sentiment'],ascending=False).reset_index(drop=False)
-                    cols = [0,0]
-                    _, cols[0], cols[1], _ = st.columns([1, 4, 4, 1])
-                    for idx, row in now_topic_df.iterrows():
-                        topic_number = int(row["topic"])
-                        topic_keyword = row["keywords"].split("_")
+                category_tab_list = st.tabs(category1_sort_list2)
+                for tab, cat1 in zip(category_tab_list, category1_sort_list):
+                    with tab:
+                        now_topic_df = topic_df_filtered[topic_df_filtered['hard_category1'] == cat1]
+                        now_topic_df = now_topic_df.sort_values(by=['sentiment'],ascending=False).reset_index(drop=False)
+                        cols = [0,0]
+                        cols[0], cols[1] = st.columns([4, 4])
+                        for idx, row in now_topic_df.iterrows():
+                            topic_number = int(row["topic"])
+                            topic_keyword = row["keywords"].split("_")
 
-                        page_buttons.append(topic_number)
-                        now_idx = idx % 2
-                        with cols[now_idx]:
-                            annotated_text(
-                                (row["hard_category1"], "Category", "#D1C9AC"),
-                                (f"{label_to_icon[row['sentiment']]}", "Sentiment", sentiment_color[row["sentiment"]])
-                                #f"{label_to_icon[topic_sentiment]}"
-                                # (topic_keyword[4], "", "#F7E5B7"),
-                            )
-                            annotated_text(
-                                (topic_keyword[0], "", "#B4C9C7"),
-                                (topic_keyword[1], "", "#F3BFB3"),
-                                (topic_keyword[2], "", "#8A9BA7"),
-                                # (topic_keyword[4], "", "#F7E5B7"),
-                            )
-                        cols[now_idx].button(row["one_sent"], key=topic_number)
-                    _, col_line, _ = st.columns([1, 8, 1])
-                    col_line.markdown("---")
+                            page_buttons.append(topic_number)
+                            now_idx = idx % 2
+                            with cols[now_idx]:
+                                annotated_text(
+                                    (row["hard_category1"], "Category", "#D1C9AC"),
+                                    (f"{label_to_icon[row['sentiment']]}", "Sentiment", sentiment_color[row["sentiment"]])
+                                    #f"{label_to_icon[topic_sentiment]}"
+                                    # (topic_keyword[4], "", "#F7E5B7"),
+                                )
+                                annotated_text(
+                                    (topic_keyword[0], "", "#B4C9C7"),
+                                    (topic_keyword[1], "", "#F3BFB3"),
+                                    (topic_keyword[2], "", "#8A9BA7"),
+                                    # (topic_keyword[4], "", "#F7E5B7"),
+                                )
+                            cols[now_idx].button(row["one_sent"], key=topic_number)
+                        st.markdown("---")
         else:
             empty1, center, empty2 = st.columns([0.9, 8, 0.9])
             with center:
@@ -212,6 +220,29 @@ def news_page(idx):
     summarization = requests.post(f"http://localhost:8001/summary/",json=now_news_json)
     summary_text = summarization.json()["summarization"]
     center.write(summary_text)
+    with elements("dashbord"):
+        layout = [dashboard.Item("first_item", 1, 0, 10, 3, isDraggable=False, moved=False, isResizable=False)]
+        with dashboard.Grid(layout):
+            
+            with mui.Card(key="first_item", sx={"display": "flex", "flexDirection": "column", "borderRadius": 3, "overflow": "hidden"}, elevation=1):
+                with mui.Stack(
+                    className="drag",
+                    alignItems="center",
+                    direction="row",
+                    spacing=1,
+                    sx={
+                        "height" : 45,
+                        "padding": "5px 10px 5px 10px",
+                        "borderBottom": 1,
+                        "borderColor": "divider",
+                    },
+                ):  
+                    mui.icon.Newspaper()
+                    mui.Typography("요약문",sx={"fontSize": 24})
+                with mui.CardContent(sx={"flex": 1}):
+                    s_list = summary_text.split('\n')
+                    for text in s_list:
+                        mui.Typography(text,sx={"fontSize": 16,'line-height':40})
     
     
 
