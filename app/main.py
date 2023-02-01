@@ -11,7 +11,7 @@ from fastapi.encoders import jsonable_encoder
 
 from omegaconf import OmegaConf
 from app.utils.Bigkindscrawl import bigkinds_crawl
-from app.utils.BERTopic.bertopic_model import bertopic_modeling
+from app.utils.BERTopic.bertopic_model import DevideTopic
 from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
 from app.utils.KorBertSum.src.extract_topk_summarization import extract_topk_summarization
 from app.utils.KorBertSum.src.topic_summary import make_summary_paragraph
@@ -19,6 +19,7 @@ from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
 app = FastAPI()
 SG = SummaryGenerater()
 TSA = TopicSentimentAnalysis()
+DT = DevideTopic()
 def split_category_df(news_df: pd.DataFrame) -> pd.DataFrame:
     """
     news_df를 category1 기준으로 "경제", "IT_과학", 그 외로 나누는 함수
@@ -63,7 +64,7 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
     #3. 토픽 분류
     print("start divide topic")
     #cfg = OmegaConf.load(f"./app/config/bertopic_config.yaml")
-    news_df = bertopic_modeling(news_df)
+    news_df = DT.bertopic_modeling(news_df)
     times[2] = time.time()
     #4. 한줄요약
     print("summary one sentence")
