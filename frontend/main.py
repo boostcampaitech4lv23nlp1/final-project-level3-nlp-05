@@ -8,7 +8,6 @@ import streamlit as st
 from streamlit import session_state as state
 from streamlit.components.v1 import html
 from annotated_text import annotated_text
-from streamlit_elements import elements, sync, event, mui, dashboard
 
 from confirm_button_hack import cache_on_button_press
 # 페이지 타이틀
@@ -220,29 +219,6 @@ def news_page(idx):
     summarization = requests.post(f"http://localhost:8001/summary/",json=now_news_json)
     summary_text = summarization.json()["summarization"]
     center.write(summary_text)
-    with elements("dashbord"):
-        layout = [dashboard.Item("first_item", 1, 0, 10, 3, isDraggable=False, moved=False, isResizable=False)]
-        with dashboard.Grid(layout):
-            
-            with mui.Card(key="first_item", sx={"display": "flex", "flexDirection": "column", "borderRadius": 3, "overflow": "hidden"}, elevation=1):
-                with mui.Stack(
-                    className="drag",
-                    alignItems="center",
-                    direction="row",
-                    spacing=1,
-                    sx={
-                        "height" : 45,
-                        "padding": "5px 10px 5px 10px",
-                        "borderBottom": 1,
-                        "borderColor": "divider",
-                    },
-                ):  
-                    mui.icon.Newspaper()
-                    mui.Typography("요약문",sx={"fontSize": 24})
-                with mui.CardContent(sx={"flex": 1}):
-                    s_list = summary_text.split('\n')
-                    for text in s_list:
-                        mui.Typography(text,sx={"fontSize": 16,'line-height':40})
     
     
 
