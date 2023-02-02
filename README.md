@@ -62,7 +62,7 @@ streamlit run main.py --server.port 30001
 ## Result / Conclusion
 
 ### 시연영상
-
+![](./asset/extractive_summary.gif)
 ## Appendix
 
 ### bla bla
