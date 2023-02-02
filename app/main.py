@@ -14,12 +14,13 @@ from app.utils.Bigkindscrawl import bigkinds_crawl
 from app.utils.BERTopic.bertopic_model import DevideTopic
 from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
 from app.utils.KorBertSum.src.extract_topk_summarization import extract_topk_summarization
-from app.utils.KorBertSum.src.topic_summary import make_summary_paragraph
+from app.utils.KorBertSum.src.topic_summary import TopicSummary
 from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
 app = FastAPI()
 SG = SummaryGenerater()
 TSA = TopicSentimentAnalysis()
 DT = DevideTopic()
+TS = TopicSummary()
 def split_category_df(news_df: pd.DataFrame) -> pd.DataFrame:
     """
     news_df를 category1 기준으로 "경제", "IT_과학", 그 외로 나누는 함수
@@ -100,7 +101,7 @@ async def request_summary_news(request:Request):
         summary_df = extract_topk_summarization(now_news_df)
         times[1]= time.time()
         #생성요약
-        summary_text = make_summary_paragraph(summary_df)
+        summary_text = TS.make_summary_paragraph(summary_df)
         times[2]= time.time()
         print(f"extract time : {times[1]-times[0]} sec \nparagraph time : {times[2]-times[1]} sec")
     return {"summarization":summary_text}
