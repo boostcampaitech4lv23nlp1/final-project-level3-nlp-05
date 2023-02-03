@@ -138,6 +138,7 @@ def search_page():
                 category1_sort_list = list(Counter(topic_df_filtered['hard_category1']).keys())
                 counter = Counter(topic_df_filtered['hard_category1'])
                 emoji = {"정치":'🏛', "경제":'💰', "사회":'🤷', "문화":'🎎', "국제":'🌐', "지역":'🚞', "스포츠":'⚽', "IT_과학":'🔬'}
+                keyword_annotate_color = ["#B4C9C7", "#F3BFB3","#8A9BA7"]
                 category1_sort_list2 = []
                 if '경제' in category1_sort_list: 
                     category1_sort_list.remove('경제')
@@ -155,7 +156,7 @@ def search_page():
                         for idx, row in now_topic_df.iterrows():
                             topic_number = int(row["topic"])
                             topic_keyword = row["keywords"].split("_")
-
+                            topic_keyword = [(topic_keyword[idx],"",keyword_annotate_color[idx]) for idx in range(len(topic_keyword))]
                             page_buttons.append(topic_number)
                             now_idx = idx % 2
                             with cols[now_idx]:
@@ -166,9 +167,7 @@ def search_page():
                                     # (topic_keyword[4], "", "#F7E5B7"),
                                 )
                                 annotated_text(
-                                    (topic_keyword[0], "", "#B4C9C7"),
-                                    (topic_keyword[1], "", "#F3BFB3"),
-                                    (topic_keyword[2], "", "#8A9BA7"),
+                                    *topic_keyword
                                     # (topic_keyword[4], "", "#F7E5B7"),
                                 )
                             cols[now_idx].button(row["one_sent"], key=topic_number)

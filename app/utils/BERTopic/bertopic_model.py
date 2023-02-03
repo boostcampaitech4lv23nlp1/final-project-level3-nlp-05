@@ -130,11 +130,9 @@ class DevideTopic():
             pd.DataFrame: bertopic modeling을 통해 나온 topic 컬럼 + input df
         """
         docs = df["titleNdescription"].tolist()
-        
         embeddings = self.sentence_model.encode(docs, show_progress_bar=False)
         #start = time.time()
         topics, probs = self.model.fit_transform(documents=docs, embeddings=embeddings)
-
         # bertopic modeling 결과 outlier(-1)만 나올 경우
         if np.sum(probs) == 0:
             # CountVectorizer 진행
@@ -171,7 +169,6 @@ class DevideTopic():
                     break
 
             topics = threshold_topics
-
         #end = time.time()
         #print(f"{end - start:.5f} sec")
 

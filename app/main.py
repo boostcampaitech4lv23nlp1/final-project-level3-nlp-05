@@ -13,7 +13,7 @@ from omegaconf import OmegaConf
 from app.utils.Bigkindscrawl import bigkinds_crawl
 from app.utils.BERTopic.bertopic_model import DevideTopic
 from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
-from app.utils.KorBertSum.src.extract_topk_copu import ExtractTopKSummary
+from app.utils.KorBertSum.src.extract_topk_summarization import ExtractTopKSummary
 from app.utils.KorBertSum.src.topic_summary import TopicSummary
 from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
 
@@ -64,7 +64,6 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
     topic_df = TSA.sentiment_analysis(topic_df)
     times[4] = time.time()
 
-    print("crwal_end")
     print(f'crawl : {times[1] - times[0]}\nBERTtopic: {times[2]-times[1]}\nonesent: {times[3]-times[2]}\nsentimen analysis: {times[4]-times[3]}')
     print(f'total time : {times[4]-times[0]} sec')
 
@@ -88,7 +87,6 @@ async def request_summary_news(request:Request):
         times=[0 for i in range(3)]    
         times[0]= time.time()
         #추출요약
-        #summary_df = extract_topk_summarization(now_news_df)
         summary_df = ETKS.add_topk_to_df(now_news_df)
         times[1]= time.time()
         #생성요약
