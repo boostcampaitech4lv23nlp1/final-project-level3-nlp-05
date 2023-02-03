@@ -3,21 +3,29 @@
 """
 from __future__ import division
 import os
+from os import listdir
+from os.path import isfile, join, isdir
 import sys
 from pathlib import Path
 ASSETS_DIR_PATH = os.path.abspath(os.path.join(Path(__file__).parent, os.pardir))
 sys.path.append(ASSETS_DIR_PATH)
-import argparse
-import glob
-import os
+
 import random
-import signal
 import time
 import numpy as np
-from tqdm import tqdm 
+import pandas as pd
+from tqdm import tqdm
+import re
+import json
+import collections
+
+import argparse
+import glob
+from glob import glob
+
+import signal 
 import torch
 from pytorch_pretrained_bert import BertConfig
-
 
 import distributed
 from src.models import data_loader, model_builder
@@ -31,23 +39,16 @@ from others.logging import logger
 # build_trainer의 dependency package pyrouge.utils가 import되지 않아 직접 셀에 삽입
 from others.logging import logger, init_logger
 import easydict
-import os
-from os import listdir
-from os.path import isfile, join, isdir
-import pandas as pd
 
-import argparse
-import json
-import os
-import time
 import urllib3
-from glob import glob
-import collections
 import six
 import gc
 import gluonnlp as nlp
 from kobert.utils import get_tokenizer
 from kobert.utils import download as _download
+
+from nltk import word_tokenize, sent_tokenize
+import nltk
 
 parent_dir = os.path.abspath(os.path.join(Path(__file__).parent, os.pardir))
 args = easydict.EasyDict({
@@ -87,7 +88,6 @@ args = easydict.EasyDict({
 device = "cpu" if args.visible_gpus == '-1' else "cuda"
 device_id = 0 if device == "cuda" else -1
 
-
 def build_trainer(args, device_id, model,
                   optim):
     """
@@ -102,9 +102,6 @@ def build_trainer(args, device_id, model,
         model_saver(:obj:`onmt.models.ModelSaverBase`): the utility object
             used to save the model
     """
-    device = "cpu" if args.visible_gpus == '-1' else "cuda"
-
-
     grad_accum_count = args.accum_count
     n_gpu = args.world_size
 
@@ -114,21 +111,10 @@ def build_trainer(args, device_id, model,
         gpu_rank = 0
         n_gpu = 0
 
-    #print('gpu_rank %d' % gpu_rank)
-
-    #tensorboard_log_dir = args.model_path
-
-    #writer = SummaryWriter(tensorboard_log_dir, comment="Unmt")
-
-    #report_manager = ReportMgr(args.report_every, start_time=-1, tensorboard_writer=writer)
-
     trainer = Trainer(args, model, optim, grad_accum_count, n_gpu, gpu_rank)#, report_manager
 
-    # print(tr)
     if (model):
         n_params = _tally_parameters(model)
-        #logger.info('* number of parameters: %d' % n_params)
-
     return trainer
 
 class Trainer(object):
@@ -212,7 +198,6 @@ class Trainer(object):
                 mask = batch.mask
                 mask_cls = batch.mask_cls
 
-
                 gold = []
                 pred = []
                 
@@ -224,19 +209,11 @@ class Trainer(object):
                 else:
                     sent_scores, mask = self.model(src, segs, clss, mask, mask_cls)
 
-                    # loss = self.loss(sent_scores, labels.float())
-                    # loss = (loss * mask.float()).sum()
-                    # batch_stats = Statistics(float(loss.cpu().data.numpy()), len(labels))
-                    # stats.update(batch_stats)
-
                     sent_scores = sent_scores + mask.float()
                     sent_scores = sent_scores.cpu().data.numpy()
                     selected_ids = np.argsort(-sent_scores, 1)
-                # selected_ids = np.sort(selected_ids,1)
-                
 
         return selected_ids
-
 
     def _gradient_accumulation(self, true_batchs, normalization, total_stats,
                                report_stats):
@@ -291,12 +268,7 @@ class Trainer(object):
 
     def _save(self, step):
         real_model = self.model
-        # real_generator = (self.generator.module
-        #                   if isinstance(self.generator, torch.nn.DataParallel)
-        #                   else self.generator)
-
         model_state_dict = real_model.state_dict()
-        # generator_state_dict = real_generator.state_dict()
         checkpoint = {
             'model': model_state_dict,
             # 'generator': generator_state_dict,
@@ -304,8 +276,6 @@ class Trainer(object):
             'optim': self.optim,
         }
         checkpoint_path = os.path.join(self.args.model_path, 'model_step_%d.pt' % step)
-        #logger.info("Saving checkpoint %s" % checkpoint_path)
-        # checkpoint_path = '%s_step_%d.pt' % (FLAGS.model_path, step)
         if (not os.path.exists(checkpoint_path)):
             torch.save(checkpoint, checkpoint_path)
             return checkpoint, checkpoint_path
@@ -364,31 +334,6 @@ class Trainer(object):
         if self.model_saver is not None:
             self.model_saver.maybe_save(step)
 
-            
-def summary(args, b_list, device_id, pt, step, model, checkpoint,model_flags):
-    device_id = 0
-    device = "cpu" if args.visible_gpus == '-1' else "cuda"
-    if (pt != ''):
-        test_from = pt
-    else:
-        test_from = args.test_from
-    
-    opt = vars(checkpoint['opt'])
-    for k in opt.keys():
-        if (k in model_flags):
-            setattr(args, k, opt[k])
-    #print(args)
-
-    #model.load_cp(checkpoint)
-    #model.eval()
-
-    test_iter =data_loader.Dataloader(args, _lazy_dataset_loader(b_list),
-                                  args.batch_size, device,
-                                  shuffle=False, is_test=True)
-    trainer = build_trainer(args, device_id, model, None)
-    result = trainer.summary(test_iter,step)
-    return result
-
 def _tally_parameters(model):
     n_params = sum([p.nelement() for p in model.parameters()])
     return n_params
@@ -415,8 +360,6 @@ def do_lang ( openapi_key, text ) :
     if json_result == -1:
         json_reason = json_data["reason"]
         if "Invalid Access Key" in json_reason:
-            #logger.info(json_reason)
-            #logger.info("Please check the openapi access key.")
             sys.exit()
         return "openapi error - " + json_reason
     else:
@@ -436,13 +379,11 @@ def get_kobert_vocab(cachedir=os.path.join(parent_dir,"tmp/")):
     # Add BOS,EOS vocab
     tokenizer = {
         "url": "s3://skt-lsl-nlp-model/KoBERT/tokenizers/kobert_news_wiki_ko_cased-1087f8699e.spiece",
-        #"fname": "/opt/ml/SumAI/bertsum/.cache/kobert_news_wiki_ko_cased-1087f8699e.spiece",
         "chksum": "ae5711deb3",
     }
     
     vocab_info = tokenizer
     vocab_file = _download(
-        #vocab_info["url"], vocab_info["fname"], vocab_info["chksum"], cachedir=cachedir
         vocab_info["url"], vocab_info["chksum"], cachedir=cachedir
     )
 
@@ -455,7 +396,6 @@ def get_kobert_vocab(cachedir=os.path.join(parent_dir,"tmp/")):
 class BertData():
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
-        #self.tokenizer = Tokenizer(vocab_file_path)
         self.sep_vid = self.tokenizer.vocab['[SEP]']
         self.cls_vid = self.tokenizer.vocab['[CLS]']
         self.pad_vid = self.tokenizer.vocab['[PAD]']
@@ -561,154 +501,93 @@ class Tokenizer(object):
 def _lazy_dataset_loader(pt_file):
     dataset = pt_file    
     yield dataset
+
+class ExtractTopKSummary():
+    def __init__(self, openapi_key):
+        self.args = args
+        self.args.gpu_ranks = [0]
+        os.environ["CUDA_VISIBLE_DEVICES"] = self.args.visible_gpus
+        self.device = "cpu" if self.args.visible_gpus == '-1' else "cuda"
+        self.device_id = 0 if device == "cuda" else -1
+        self.model_flags = ['hidden_size', 'ff_size', 'heads', 'inter_layers','encoder','ff_actv', 'use_interval','rnn_size']
+        self.checkpoint = torch.load(self.args.test_from, map_location=lambda storage, loc: storage)
+        config = BertConfig.from_json_file(self.args.bert_config_path)
+        self.model = Summarizer(self.args, self.device, load_pretrained_bert=False, bert_config = config)
+        self.model.load_cp(self.checkpoint)
+        self.model.eval()  
+        vocab = get_kobert_vocab()
+        self.tokenizer = nlp.data.BERTSPTokenizer(get_tokenizer(), vocab, lower=False)
+        self.openapi_key = openapi_key
+        self.bertdata = BertData(self.tokenizer)
+        self.trainer = build_trainer(self.args, self.device_id, self.model, None)
+        opt = vars(self.checkpoint['opt'])
+        for k in opt.keys():
+            if (k in self.model_flags):
+                setattr(self.args, k, opt[k])
     
-def News_to_input(text, openapi_key, tokenizer):
-    newstemp = do_lang(openapi_key, text)
-    news = newstemp.split(' ./SF ')[:-1]
+    def add_topk_to_df(self, df):
+        start = time.time()
+        topk = []
+        for i,context in enumerate(tqdm(df['context'])):
+            context = context[:30]
+            top = None
+            top = self.get_top_sentences(' '.join(context))
+            if(top):
+                topk.append(top)
+            else:
+                topk.append('Hello world')
+                
+        df['topk'] = topk
+        df = df.drop(df[df['topk'] == 'Hello world'].index)
+        return df
+
+    def get_top_sentences(self, user_input):
+        bot_input_ids = self.News_to_input(user_input)
+        chat_history_ids = self.summary(bot_input_ids, None)
+        if(len(chat_history_ids) == 0): 
+            chat_history_ids = ([i for i in range(len(user_input.split('. ')))], None)
+        pred_lst = list(chat_history_ids[0])
+        final_text = []
+        for p in pred_lst:
+            if(p < len(user_input.split('. ')) and len(user_input.split('. ')[p]) > 10):
+                final_text.append((p, user_input.split('. ')[p]+'. '))
+        return final_text
+
+    def News_to_input(self,text):
+        newstemp = do_lang(self.openapi_key, text)
+        news = newstemp.split(' ./SF ')[:-1]
+        sent_labels = [0] * len(news)
+        tmp = self.bertdata.preprocess(news)
+        if(not tmp): return None
+
+        b_data_dict = {"src":tmp[0],
+                "tgt": [0],
+                "labels":[0,0,0],
+                "src_sent_labels":sent_labels,
+                "segs":tmp[2],
+                "clss":tmp[3],
+                "src_txt":tmp[4],
+                "tgt_txt":'hehe'}
+        b_list = []
+        b_list.append(b_data_dict) 
+        return b_list
     
-    bertdata = BertData(tokenizer)
-    sent_labels = [0] * len(news)
-    tmp = bertdata.preprocess(news)
-    if(not tmp): return None
-    #print(tmp)
-    b_data_dict = {"src":tmp[0],
-               "tgt": [0],
-               "labels":[0,0,0],
-               "src_sent_labels":sent_labels,
-               "segs":tmp[2],
-               "clss":tmp[3],
-               "src_txt":tmp[4],
-               "tgt_txt":'hehe'}
-    b_list = []
-    b_list.append(b_data_dict) 
-    return b_list
-
-openapi_key = '9318dc23-24ac-4b59-a99e-a29ec170bf02'
-
-import re
-from nltk import word_tokenize, sent_tokenize
-import nltk
-#nltk.download('punkt')
-
-def clean_byline(text):
-    # byline
-    pattern_email = re.compile(r'[-_0-9a-z]+@[-_0-9a-z]+(?:\.[0-9a-z]+)+', flags=re.IGNORECASE)
-    pattern_url = re.compile(r'(?:https?:\/\/)?[-_0-9a-z]+[^~][^%](?:\.[-_0-9a-z]+)+[^%]', flags=re.IGNORECASE)
-    pattern_others = re.compile(r'\[[^\]]*(◼|기자|뉴스|사진|자료|자료사진|출처|특파원|교수|작가|대표|논설|고문|주필|부문장|팀장|장관|원장|연구원|이사장|위원|실장|차장|부장|에세이|화백|사설|소장|단장|과장|기획자|경제|한겨례|일보|미디어|데일리|한겨례|타임즈|위키트리|큐레이터|저작권|평론가|©|©|ⓒ|\@|\/|=|▶|무단|전재|재배포|금지|댓글|좋아요|공유하기|글씨 크게 보기|글씨 작게 보기|고화질|표준화질|자동 재생|키보드 컨트롤 안내|동영상 시작)[가-힣1-9a-zA-Z ]+?\]')
-    pattern_others2 = re.compile(r'\([^\)]*(◼|기자|뉴스|사진|자료|자료사진|출처|특파원|교수|작가|대표|논설|고문|주필|부문장|팀장|장관|원장|연구원|이사장|위원|실장|차장|부장|에세이|화백|사설|소장|단장|과장|기획자|경제|한겨례|일보|미디어|데일리|한겨례|타임즈|위키트리|큐레이터|저작권|평론가|©|©|ⓒ|\@|\/|=|▶|무단|전재|재배포|금지|댓글|좋아요|공유하기|글씨 크게 보기|글씨 작게 보기|고화질|표준화질|자동 재생|키보드 컨트롤 안내|동영상 시작)[가-힣1-9a-zA-Z ]+?\)')
-    pattern_tag = re.compile(r'\<[^>][^가-힣 ]*?>')
-    result = pattern_email.sub('', text)
-    result = pattern_url.sub('', result)
-    result = pattern_others.sub('', result)
-    result = pattern_others2.sub('', result)
-    result = pattern_tag.sub('', result)
-
-    # 본문 시작 전 꺽쇠로 쌓인 바이라인 제거
-    pattern_bracket = re.compile(r'^((?:\[.+\])|(?:【.+】)|(?:<.+>)|(?:◆.+◆)\s)')
-    result = pattern_bracket.sub('', result).strip()
-    return result
+    def summary(self,b_list, step):
+        test_iter =data_loader.Dataloader(self.args, _lazy_dataset_loader(b_list),
+                                    args.batch_size, self.device,
+                                    shuffle=False, is_test=True)
+        result = self.trainer.summary(test_iter,step)
+        return result
 
 
-def text_filter(title, raw): # str -> 전처리 -> 문장 배열
-    text = clean_byline(raw)
-    result = text.strip()
-    sentences = sent_tokenize(result) 
-    
-    return_sentences = []
-    for sentence in sentences:
-        for sent in sentence.split('\n'):
-            split_sent = [s+'다.' for s in sent.split('다.')]
-            for s in split_sent:
-                s = s.strip()
-                if(len(s)>12 and '다' in s[-3:]): 
-                    if(s[-1] != '.'):
-                        s += '.'
-                    return_sentences.append(s+' ')
-        
-    s1 = set(title.split())
-    s2 = set(return_sentences[0].split())
-    actual_jaccard = float(len(s1.intersection(s2)))/float(len(s1.union(s2)))
-    if(actual_jaccard > 0.5):
-        return_sentences = return_sentences[1:]
-        
-    return_sentences = return_sentences[:30]
-    return return_sentences
-
-
-def get_top_sentences(user_input, model, tokenizer,checkpoint,model_flags):
-    bot_input_ids = News_to_input(user_input, openapi_key, tokenizer)
-    
-    chat_history_ids = summary(args, bot_input_ids, 0, '', None, model,checkpoint,model_flags)
-    if(len(chat_history_ids) == 0): 
-        chat_history_ids = ([i for i in range(len(user_input.split('. ')))], None)
-    pred_lst = list(chat_history_ids[0])
-    final_text = []
-    for p in pred_lst:
-        if(p < len(user_input.split('. ')) and len(user_input.split('. ')[p]) > 10):
-            final_text.append((p, user_input.split('. ')[p]+'. '))
-    return final_text
-
-
-def add_topk_to_df(df, model, tokenizer,checkpoint,model_flags):
-    
-    start = time.time()
-    topk = []
-    for i,context in enumerate(tqdm(df['context'])):
-        #context2 = eval(context2)
-        '''
-        context = []
-        for s in context2:
-            if(len(s) > 600):
-                s = s.split('.')[0]+' '
-            if(len(s) < 600):
-                context.append(s)
-        '''
-        context = context[:30]
-        top = None
-        top = get_top_sentences(' '.join(context), model, tokenizer,checkpoint,model_flags)
-        if(top):
-            topk.append(top)
-        else:
-            topk.append('Hello world')
-            
-    df['topk'] = topk
-    df = df.drop(df[df['topk'] == 'Hello world'].index)
-    print(f"{time.time()-start:.4f} sec")
-    return df
-
-
-def add_context_to_df(df):
-    contexts = []
-    for raw, title in zip(tqdm(df['raw']), df['title']):
-        if(raw):
-            contexts.append(text_filter(title, raw))
-        else:
-            contexts.append('delete this')
-    df['context'] = contexts
-    df = df.drop(df[df['context'] == 'delete this'].index)
-    return df
-
-def extract_topk_summarization(news_df):
-    args.gpu_ranks = [0]
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.visible_gpus
-
-    model_flags = ['hidden_size', 'ff_size', 'heads', 'inter_layers','encoder','ff_actv', 'use_interval','rnn_size']
-    
-    checkpoint = torch.load(args.test_from, map_location=lambda storage, loc: storage)
-    config = BertConfig.from_json_file(args.bert_config_path)
-    model = Summarizer(args, device, load_pretrained_bert=False, bert_config = config)
-    model.load_cp(checkpoint)
-    model.eval()  
-    vocab = get_kobert_vocab()
-    tokenizer = nlp.data.BERTSPTokenizer(get_tokenizer(), vocab, lower=False)
-    topic_df = add_topk_to_df(news_df, model, tokenizer,checkpoint,model_flags)
-    #topic_df.to_csv(f"final_after_extract_topk.csv",index = False)
-    #topic_df.to_pickle(f"final_after_extract_topk.pkl")
-    return  topic_df#[topic, context, topk]
-    
 if __name__ == '__main__':
-    news_df = pd.read_pickle("final_after_extract_topk.pkl")
-    topic_df = extract_topk_summarization(news_df)
-    topic_df.to_csv(f"after_extract_topk.csv",index = False)
-    topic_df.to_pickle(f"after_extract_topk.pkl")
+    news_df = pd.read_pickle("네이버_20221201_20221203_news_df.pkl")
+    openapi_key = '9318dc23-24ac-4b59-a99e-a29ec170bf02'
+    ETKS = ExtractTopKSummary(openapi_key)
+    time1 = time.time()
+    topic_df = ETKS.add_topk_to_df(news_df)
+    time2 = time.time()
+    print(f"time: {time2-time1}")
+    #topic_df.to_csv(f"after_extract_topk.csv",index = False)
+    #topic_df.to_pickle(f"after_extract_topk.pkl")
     print(topic_df)

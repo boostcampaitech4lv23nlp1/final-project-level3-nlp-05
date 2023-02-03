@@ -13,28 +13,17 @@ from omegaconf import OmegaConf
 from app.utils.Bigkindscrawl import bigkinds_crawl
 from app.utils.BERTopic.bertopic_model import DevideTopic
 from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
-from app.utils.KorBertSum.src.extract_topk_summarization import extract_topk_summarization
+from app.utils.KorBertSum.src.extract_topk_copu import ExtractTopKSummary
 from app.utils.KorBertSum.src.topic_summary import TopicSummary
 from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
+
 app = FastAPI()
 SG = SummaryGenerater()
 TSA = TopicSentimentAnalysis()
 DT = DevideTopic()
 TS = TopicSummary()
-def split_category_df(news_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    news_df를 category1 기준으로 "경제", "IT_과학", 그 외로 나누는 함수
-    Args:
-        news_df (pd.DataFrame): DB에서 response로 가져온 news_df
-
-    Returns:
-        pd.DataFrame: news_df를 economy_df, it_df, others_df로 나누어서 return
-    """
-    economy_df = news_df[(news_df["category1"] == "경제")]
-    it_df = news_df[(news_df["category1"] == "IT_과학")]
-
-    others_df = news_df[~((news_df["category1"] == "경제")|(news_df["category1"] == "IT_과학"))]
-    return economy_df, it_df, others_df
+openapi_key = '9318dc23-24ac-4b59-a99e-a29ec170bf02'
+ETKS = ExtractTopKSummary(openapi_key)
 
 #크롤링부터 한줄요약까지
 @app.post("/company_name/")
@@ -60,11 +49,10 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
         topic_df = pd.DataFrame()
         result = json.dumps({"news_df": news_df.to_json(orient = "records",force_ascii=False) ,"topic_df": topic_df.to_json(orient = "records",force_ascii=False)})   
         return Response(result, media_type="application/json")
-    #print("num of news:",len(news_df))
+        
     times[1] = time.time()
     #3. 토픽 분류
     print("start divide topic")
-    #cfg = OmegaConf.load(f"./app/config/bertopic_config.yaml")
     news_df = DT.bertopic_modeling(news_df)
     times[2] = time.time()
     #4. 한줄요약
@@ -75,6 +63,7 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
     print("sentiment analysis")
     topic_df = TSA.sentiment_analysis(topic_df)
     times[4] = time.time()
+
     print("crwal_end")
     print(f'crawl : {times[1] - times[0]}\nBERTtopic: {times[2]-times[1]}\nonesent: {times[3]-times[2]}\nsentimen analysis: {times[4]-times[3]}')
     print(f'total time : {times[4]-times[0]} sec')
@@ -83,6 +72,7 @@ def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int 
     #topic_df.to_pickle(f"{company_name}_{date_gte}_{date_lte}_topic.pkl")
     #news_df.to_csv(f"{company_name}_{date_gte}_{date_lte}_news.csv",index=False)
     #news_df.to_pickle(f"{company_name}_{date_gte}_{date_lte}_news_df.pkl")
+
     #5. 한줄요약 반환
     result = json.dumps({"news_df": news_df.to_json(orient = "records",force_ascii=False) ,"topic_df": topic_df.to_json(orient = "records",force_ascii=False)})   
     return Response(result, media_type="application/json")
@@ -98,7 +88,8 @@ async def request_summary_news(request:Request):
         times=[0 for i in range(3)]    
         times[0]= time.time()
         #추출요약
-        summary_df = extract_topk_summarization(now_news_df)
+        #summary_df = extract_topk_summarization(now_news_df)
+        summary_df = ETKS.add_topk_to_df(now_news_df)
         times[1]= time.time()
         #생성요약
         summary_text = TS.make_summary_paragraph(summary_df)
