@@ -6,7 +6,7 @@
 * Model/ Reasearch: 데이터셋 / 모델 / 연구 / 최종 적용 모델
 * Product Serving: 아키텍쳐/ 구현/ 데모
 * Result / Conclusion: 시연 영상 / 후속 개발 및 연구 / 결과 및 고찰
-* Appendix: 도전적인 실험 / 레슨런 / 예상 Q&A / 팀원 개별 소개 등
+* Appendix: 도전적인 실험 / 레슨런 / 예상 Q&A
 
 ## Intro
 
@@ -33,17 +33,17 @@
 
 ## Dataset & Model
 
-### flow chart
+### ⚙️ flow overview
 <img src="./asset/flow_chart.png" width=80% height=50%>
 
-### dataset
+### 💾 dataset
 - Naver developer api와 bigkinds의 뉴스데이터를 활용해서 뉴스 본문 데이터 수집
 - 20221101 ~ 20230203 기간의 총 66만건의 데이터 수집
 - 수집한 데이터는 전처리 과정을 거쳐 ElasticSeach에 Insert
 
-### Model
+### 🧠 Model
 
-#### 토픽모델링
+#### 토픽모델링(BERTopic)
 | Embedding Model            | Shilhoutte Score                    | Speed(sec)    |
 | ------------------ | ----------------------- |-------|
 | Paraphrase mpnet | **0.7585** | 7.34 |
@@ -52,14 +52,14 @@
 | Paraphrase MiniLM | 0.6994 | **5.81** |
 | QA mpnet | 0.6927 |11.16|
 
-#### 토픽 한 줄 요약
+#### 토픽 한 줄 요약(Generative summary)
 | Embedding Model            | Rouge-1(F1)     | Rouge-2(F1)    | Rouge-3(F1)     | Length    | Speed(sec)    |
 | ------------------ | ----------------------- |-------|------------------ | ----------------------- |-------|
 | kobart-summarization |  **0.495** | **0.339** | **0.413** | 115.83 | **0.46** |
 | KR-SBERT |  **0.495** | 0.329 | 0.385 | 201.49 | 3.19 |
 | DistillBERT |  0.488 | 0.324 | 0.394 | 180.29 | 0.64 |
 
-#### 감성  분석
+#### 감성  분석(Sentimental analysis)
 |Model | Loss |AUPRC |Micro F1 |Speed(sec) |Easy data (#48) | Medium data(#22) |Hard data (#23) |Total data (#93)|
 | ------------------ | ----------------------- |-------|---------- | ---------------- |-------|------------- | ------------- |-------|
 |roberta-large | **0.4667** | **88.1713** | **82.7956** | 0.7371 | **43** | **18** | **16** | **77** |
@@ -67,46 +67,25 @@
 |roberta-base 2 | 0.5078 | 88.6208 | 78.4946 | **0.2668** | 42 | 14 | 17 | 73 |
 |KorFinASC-XLM-RoBERTa | 4.3266 | 29.8050 | 32.2580 | 0.8201 | 14 | 7 | 7 | 28 |
 
-#### 토픽 내 뉴스  요약
+#### 토픽 내 뉴스  요약(Extractive summary)
 | Model | Rouge-1(F1) | Rouge-2(F1) | Rouge-3(F1) | Rouge-1(Recall) | Rouge-2(Recall) | Rouge-3(Recall) |
+| ------------------ | ----------------------- |-------|------------------ | ----------------------- |-------|-------|
+|  Etri pretrained model | 0.7550 | 0.5944 | 0.7045 | 0.7213 | 0.5661 | 0.6714|
+| AIHub data fine-tuned model | 0.7834 | 0.6365 | 0.7295 | 0.7969 | 0.6467 | 0.7421|
 
-| ------------------ | ----------------------- |-------|
-| Paraphrase mpnet | **0.7585** | 7.34 |
-| KR-SBERT | 0.7439 | 6.68 |
-| DistillBERT | 0.7012| 7.88 |
-| Paraphrase MiniLM | 0.6994 | **5.81** |
-| QA mpnet | 0.6927 |11.16|
 ## Product Serving
 
 ### Architecture
-
-## Result
-
-### 구현
-
-### Demo
-
-```
-conda create -n final_project
-pip install -r requirements.txt
-bash ./install.sh # hanspell은 pip에 없음
-```
-
-새로운 패키지를 설치 했을때
-```
-pip list --format=freeze > ./requirements.txt
-```
-
-## streamlit run
-```
-streamlit run main.py --server.port 30001
-```
+<img src="./asset/arhitecture.png" width=80% height=50%>
 
 ## Result / Conclusion
 
 ### 시연영상
-![](./asset/extractive_summary.gif)
+<img src="./asset/search.gif" width=70% height=50%>
+<img src="./asset/extractiv.gif" width=70% height=50%>
+
 ## Appendix
 
-### bla bla
+### 레슨런
+### 예상 Q&A
 
