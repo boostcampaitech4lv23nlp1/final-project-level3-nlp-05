@@ -29,7 +29,7 @@
 김진호                       |  신혜진                   |  이효정                    |  이상문                    |  정지훈                    |
 :-------------------------:|:------------------------:|:------------------------:|:------------------------:|:-------------------------:
 <img src="./asset/kjh_image.png" width=50% height=50%>    | <img src="./asset/shj_image.png" width=45% height=45%>  | <img src="./asset/lhj_image.png" width=40% height=40%>  |<img src="./asset/lsm_image.png" width=40% height=40%>|<img src="./asset/jjh_image.png" width=50% height=50%> 
-| 토픽 모델링  | 본문 추출 요약 <br> 한줄 생성 요약| 프론트, 백엔드 <br> 한줄 요약 감성 분석|뉴스 데이터 수집 <br> DB 구축| 한줄 요약 모델링
+| 토픽 모델링  | 본문 추출 요약 <br> 한줄 생성 요약| 프론트, 백엔드 <br> 한줄 요약 감성 분석|뉴스 데이터 수집 <br> DB 구축| 한줄 생성 요약 <br> 유사도 분류
 
 ## Dataset & Model
 
@@ -38,7 +38,7 @@
 
 ### 💾 dataset
 - Naver developer api와 bigkinds의 뉴스데이터를 활용해서 뉴스 본문 데이터 수집
-- 20221101 ~ 20230203 기간의 총 66만건의 데이터 수집
+- 2022.11.01 ~ 2023.02.03 기간의 총 66만건의 데이터 수집
 - 수집한 데이터는 전처리 과정을 거쳐 ElasticSeach에 Insert
 
 ### 🧠 Model
@@ -92,7 +92,7 @@
 ### Architecture
 <img src="./asset/arhitecture.png" width=80% height=50%>
 
-- 모든 서버는 aistage 서버  활용
+- 모든 서버는 aistage 서버(V100)  활용
 - Database Server
   * Naver Developer api 와 bigkinds 뉴스데이터를 크롤링 & 전처리 & ElasticSearch에 삽입
   * Kibana를 이용하여 데이터의 상태 가시화
@@ -105,7 +105,7 @@
   * Frontend Server에서 오는 요청 수행 후 응답
 
 ### Demo
-* 유저의 query를 받아 관련된 뉴스를 토픽별로 클러스터링 & 한줄 생성  요약 (ex 삼성전자)
+* 유저의 query를 받아 관련된 뉴스를 토픽별로 클러스터링 & 한줄 생성 요약 (ex. 삼성전자)
 <img src="./asset/search.gif" width=70% height=50%>
 
 * 한줄로 요약된 클러스터된 토픽 클릭 -> 클러스링된 뉴스들을 추출 요약
