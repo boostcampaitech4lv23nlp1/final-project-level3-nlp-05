@@ -92,6 +92,7 @@
 ### Architecture
 <img src="./asset/arhitecture.png" width=80% height=50%>
 
+- 모든 서버는 aistage 서버  활용
 - Database Server
   * Naver Developer api 와 bigkinds 뉴스데이터를 크롤링 & 전처리 & ElasticSearch에 삽입
   * Kibana를 이용하여 데이터의 상태 가시화
