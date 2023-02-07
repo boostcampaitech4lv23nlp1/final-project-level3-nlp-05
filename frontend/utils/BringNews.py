@@ -2,7 +2,7 @@ import pandas as pd
 import requests
 from collections import defaultdict
 
-def bigkinds_crawl(company_name:str,date_gte:int,date_lte:int,topk:int=9999) -> pd.DataFrame:
+def bring_news(company_name:str,date_gte:int,date_lte:int,topk:int=9999) -> pd.DataFrame:
     '''
     input:
         company_name(str): 검색어

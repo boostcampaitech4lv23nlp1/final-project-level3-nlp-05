@@ -11,7 +11,7 @@ from streamlit.components.v1 import html
 from annotated_text import annotated_text
 
 from utils.confirm_button_hack import cache_on_button_press
-from utils.Bigkindscrawl import bigkinds_crawl
+from utils.BringNews import bring_news
 # 페이지 타이틀
 st.set_page_config(page_title="NEWS.tar", layout="wide")
 
@@ -106,7 +106,7 @@ def search_page():
                 
                 # 회사이름 검색 요청
                 # 1. 크롤링
-                news_df = bigkinds_crawl(company_name, start_date ,end_date)
+                news_df = bring_news(company_name, start_date ,end_date)
                 # 2. 뉴스가 없으면 끝 아니면 토픽 분류에서 감성 분석까지 진행
                 if len(news_df) == 0:
                     topic_df = pd.DataFrame()
