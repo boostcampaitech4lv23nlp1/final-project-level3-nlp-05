@@ -3,7 +3,7 @@
 ## Table of content
 
 * Intro : 팀 소개/ 프로젝스 소개(문제 정의) / 개발 목표
-* Model/ Reasearch: 데이터셋 / 모델 / 연구 / 최종 적용 모델
+* Dataset & Model: 데이터셋 / 모델 / 연구 / 최종 적용 모델
 * Product Serving: 아키텍쳐/ 구현/ 데모
 * Result / Conclusion: 시연 영상 / 후속 개발 및 연구 / 결과 및 고찰
 * Appendix: 도전적인 실험 / 레슨런 / 예상 Q&A
@@ -28,7 +28,7 @@
 ### Team member
 김진호                       |  신혜진                   |  이효정                    |  이상문                    |  정지훈                    |
 :-------------------------:|:------------------------:|:------------------------:|:------------------------:|:-------------------------:
-<img src="./asset/kjh_image.png" width=50% height=50%>    | <img src="./asset/shj_image.png" width=40% height=40%>  | <img src="./asset/lhj_image.png" width=50% height=50%>  |<img src="./asset/lsm_image.png" width=40% height=40%>|<img src="./asset/jjh_image.png" width=50% height=50%> 
+<img src="./asset/kjh_image.png" width=50% height=50%>    | <img src="./asset/shj_image.png" width=45% height=45%>  | <img src="./asset/lhj_image.png" width=40% height=40%>  |<img src="./asset/lsm_image.png" width=40% height=40%>|<img src="./asset/jjh_image.png" width=50% height=50%> 
 | 토픽 모델링  | 본문 추출 요약 <br> 한줄 생성 요약| 프론트, 백엔드 <br> 한줄 요약 감성 분석|뉴스 데이터 수집 <br> DB 구축| 한줄 요약 모델링
 
 ## Dataset & Model
@@ -92,14 +92,48 @@
 ### Architecture
 <img src="./asset/arhitecture.png" width=80% height=50%>
 
+- Database Server
+  * Naver Developer api 와 bigkinds 뉴스데이터를 크롤링 & 전처리 & ElasticSearch에 삽입
+  * Kibana를 이용하여 데이터의 상태 가시화
+  * Airflow를 이용하여 새로운 데이터 처리 및 추가 작업 자동화
+- Frontend Server
+  * Streamlit으로 Frontend server 운용
+  * Client의 query를 Database server로 요청
+  * Database의 응답을 Model server로 전달 후 응답 수신
+- Model Server
+  * Frontend Server에서 오는 요청 수행 후 응답
+
+### Demo
+* 유저의 query를 받아 관련된 뉴스를 토픽별로 클러스터링 & 한줄 생성  요약 (ex 삼성전자)
+<img src="./asset/search.gif" width=70% height=50%>
+
+* 한줄로 요약된 클러스터된 토픽 클릭 -> 클러스링된 뉴스들을 추출 요약
+<img src="./asset/extractiv.gif" width=70% height=50%>
+
 ## Result / Conclusion
 
 ### 시연영상
-<img src="./asset/search.gif" width=70% height=50%>
-<img src="./asset/extractiv.gif" width=70% height=50%>
+[영상 추가 필요]
+
+### Conclution & 후속 개발
+[파일로 추가 예정]
 
 ## Appendix
 
+[파일로 추가 예정]
+
 ### 레슨런
+* 실제 서비스를 구축한다는 생각으로 데이터 파이프라인 구축 및 자동화 작업
+
 ### 예상 Q&A
+* 실제 서비스라면 데이터에 대한 저작권 및 그 비용은?
+
+## Reference
+- Grootendorst, Maarten. "BERTopic: Neural topic modeling with a class-based TF-IDF procedure." arXiv preprint arXiv:2203.05794 (2022).
+- Malo, Pekka, et al. "Good debt or bad debt: Detecting semantic orientations in economic texts." Journal 
+of the Association for Information Science and Technology 65.4 (2014): 782-796.
+- Lewis, Mike, et al. "Bart: Denoising sequence-to-sequence pre-training for natural language generation, translation, and comprehension." arXiv preprint arXiv:1910.13461 (2019).
+- Lee, Dongyub, et al. "Reference and document aware semantic evaluation methods for Korean language summarization." arXiv preprint arXiv:2005.03510 (2020).
+- Liu, Yang, and Mirella Lapata. "Text summarization with pretrained encoders." arXiv preprint arXiv:1908.08345 (2019).
+
 
