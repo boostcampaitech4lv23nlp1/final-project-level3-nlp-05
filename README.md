@@ -20,8 +20,8 @@
 ### Team member
 김진호                       |  신혜진                   |  이효정                    |  이상문                    |  정지훈                    |
 :-------------------------:|:------------------------:|:------------------------:|:------------------------:|:-------------------------:
-<img src="./asset/kjh_image.png" width=125px>    | <img src="./asset/shj_image.png" width=125px>  | <img src="./asset/lhj_image.png" width=125px>  | <img src="./asset/lsm_image.png" width=125px> | <img src="./asset/jjh_image.png" width=125px> 
-| 토픽 모델링  | 본문 요약 모델링| 프론트, 백엔드| 뉴스 데이터 수집| 한줄 요약 모델링
+<img src="./asset/kjh_image.png" width=50% height=50%>    | <img src="./asset/shj_image.png" width=40% height=40%>  | <img src="./asset/lhj_image.png" width=50% height=50%>  |<img src="./asset/lsm_image.png" width=40% height=40%>| <img src="./asset/jjh_image.png" width=50% height=50%> 
+| 토픽 모델링  | 본문 요약 모델링| 프론트, 백엔드|뉴스 데이터 수집| 한줄 요약 모델링
 
 ## Model/ Research
 
