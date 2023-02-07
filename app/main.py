@@ -1,97 +1,81 @@
-from fastapi import FastAPI, Response, Request
 import requests
+from fastapi import FastAPI, Response, Request
+from fastapi.encoders import jsonable_encoder
 
+import time
 import json
 import pandas as pd
 from typing import Dict, Union, List
 from collections import defaultdict
-import time
-from pydantic import BaseModel
-from fastapi.encoders import jsonable_encoder
 
-from omegaconf import OmegaConf
-from app.utils.Bigkindscrawl import bigkinds_crawl
 from app.utils.BERTopic.bertopic_model import DevideTopic
 from app.utils.One_sent_summary.one_sent_summarization import SummaryGenerater
 from app.utils.KorBertSum.src.extract_topk_summarization import ExtractTopKSummary
 from app.utils.KorBertSum.src.topic_summary import TopicSummary
-from app.utils.SentimentAnalysis.sapipeline import TopicSentimentAnalysis
+from app.utils.SentimentAnalysis.SentimentAnalysis import TopicSentimentAnalysis
 
 app = FastAPI()
-SG = SummaryGenerater()
-TSA = TopicSentimentAnalysis()
+# 토픽 분류
 DT = DevideTopic()
-TS = TopicSummary()
-openapi_key = '9318dc23-24ac-4b59-a99e-a29ec170bf02'
+# 한 줄 요약
+SG = SummaryGenerater()
+# 감성분석
+TSA = TopicSentimentAnalysis()
+# 토픽 내 요약 - 추출요약
+openapi_key = '9318dc23-24ac-4b59-a99e-a29ec170bf02'    #추출요약 시 사용하는 openai key
 ETKS = ExtractTopKSummary(openapi_key)
+# 토픽 내 요약 - 생성요약
+TS = TopicSummary()
 
 #크롤링부터 한줄요약까지
 @app.post("/company_name/")
-def request_crawl_news(company_name:str, date_gte:int,date_lte:int,news_num:int = 999) -> Response:
+async def request_crawl_news(request:Request) -> Response:
     '''
+    검색하면 뉴스 크롤링부터 감성분석까지 진행
     input:
-        company_name(str): 검색어
-        date_gte(int): 시작일
-        date_lte(int): 종료일
-        news_num(int): 검색 뉴스 수
+        request(Request) : 뉴스 크롤링 결과 DataFrame # news_df.columns = [title,titleNdescription,context,URL,date,category1,category2,concat_text]
     output:
-        Dict{"news_df" : 뉴스 dataframe_tojson
-             "topic_df" : 토픽 dataframe_tojson}
+        Dict{news_df(json) : 뉴스 dataframe_tojson # news_df.columns = [title,titleNdescription,context,URL,date,category1,category2,topic,concat_text]
+             topic_df(json) : 토픽 dataframe_tojson # topic_df.columns =  [topic,one_sent,hard_category1,hard_category2,keywords,sentiment]
+            }
     '''
-    times=[0 for i in range(5)]    
-    times[0]= time.time()
+    # 1. 크롤링 결과 가져오기
+    body_bytes = await request.body()
+    news_df = None
+    if body_bytes:
+        news_json = await request.json()
+        news_df = pd.read_json(news_json,orient="columns")
 
-    #1. 크롤링
-    print("crawl news")
-    news_df = bigkinds_crawl(company_name,date_gte,date_lte,news_num) # news_df = ['title','description','url','date']
-    if len(news_df) < 10:
-        news_df = pd.DataFrame()
-        topic_df = pd.DataFrame()
-        result = json.dumps({"news_df": news_df.to_json(orient = "records",force_ascii=False) ,"topic_df": topic_df.to_json(orient = "records",force_ascii=False)})   
-        return Response(result, media_type="application/json")
-        
-    times[1] = time.time()
-    #3. 토픽 분류
-    print("start divide topic")
+    # 2. 토픽 분류
     news_df = DT.bertopic_modeling(news_df)
-    times[2] = time.time()
-    #4. 한줄요약
-    print("summary one sentence")
+    # 3. 한 줄 요약
     topic_df = SG.summary(news_df)
-    times[3] = time.time()
-    #5. 감성분석
-    print("sentiment analysis")
+    # 4. 감성분석
     topic_df = TSA.sentiment_analysis(topic_df)
-    times[4] = time.time()
-
-    print(f'crawl : {times[1] - times[0]}\nBERTtopic: {times[2]-times[1]}\nonesent: {times[3]-times[2]}\nsentimen analysis: {times[4]-times[3]}')
-    print(f'total time : {times[4]-times[0]} sec')
-
-    #topic_df.to_csv(f"{company_name}_{date_gte}_{date_lte}_topic.csv",index=False)
-    #topic_df.to_pickle(f"{company_name}_{date_gte}_{date_lte}_topic.pkl")
-    #news_df.to_csv(f"{company_name}_{date_gte}_{date_lte}_news.csv",index=False)
-    #news_df.to_pickle(f"{company_name}_{date_gte}_{date_lte}_news_df.pkl")
-
-    #5. 한줄요약 반환
+    
     result = json.dumps({"news_df": news_df.to_json(orient = "records",force_ascii=False) ,"topic_df": topic_df.to_json(orient = "records",force_ascii=False)})   
     return Response(result, media_type="application/json")
     
-# 문단요약
+# 토픽 내 뉴스 요약
 @app.post("/summary/")
-async def request_summary_news(request:Request): 
+async def request_summary_news(request:Request):
+    '''
+    토픽 내 뉴스 요약 진행
+    input 
+        request(Request) : 토픽 내 뉴스 dataframe
+    output
+        Dict{
+            summarization(str) : 토픽 내 뉴스 요약문
+        }
+    '''
     body_bytes = await request.body()
     summary_text = ""
     if body_bytes:
         news_json = await request.json()
         now_news_df = pd.read_json(news_json,orient="columns")
-        times=[0 for i in range(3)]    
-        times[0]= time.time()
         #추출요약
         summary_df = ETKS.add_topk_to_df(now_news_df)
-        times[1]= time.time()
         #생성요약
         summary_text = TS.make_summary_paragraph(summary_df)
-        times[2]= time.time()
-        print(f"extract time : {times[1]-times[0]} sec \nparagraph time : {times[2]-times[1]} sec")
     return {"summarization":summary_text}
     

@@ -46,7 +46,7 @@ class DevideTopic():
         ko_stop_words = [text.rstrip() for text in f.readlines()]
 
         custom_tokenizer = CustomTokenizer(Mecab(), ko_stop_words)
-        vectorizer = CountVectorizer(tokenizer=custom_tokenizer, max_features=3000)
+        self.vectorizer = CountVectorizer(tokenizer=custom_tokenizer, max_features=3000)
 
         # embedding 생성
         model_name = model_cfg.model_name
@@ -67,7 +67,7 @@ class DevideTopic():
             embedding_model=self.sentence_model,
             umap_model=umap_model,
             hdbscan_model=hdbscan_model,
-            vectorizer_model=vectorizer,
+            vectorizer_model=self.vectorizer,
             top_n_words=model_cfg.top_n_words,
             # nr_topics = model_cfg.nr_topics,
             calculate_probabilities=False,
@@ -136,7 +136,7 @@ class DevideTopic():
         # bertopic modeling 결과 outlier(-1)만 나올 경우
         if np.sum(probs) == 0:
             # CountVectorizer 진행
-            X = vectorizer.fit_transform(docs)
+            X = self.vectorizer.fit_transform(docs)
 
             # l2 정규화
             X = normalize(X)

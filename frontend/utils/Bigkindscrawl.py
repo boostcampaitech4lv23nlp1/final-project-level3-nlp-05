@@ -13,9 +13,9 @@ def bigkinds_crawl(company_name:str,date_gte:int,date_lte:int,topk:int=9999) -> 
         dataFrame["title", "titleNdescription", "context", "URL", "date", "category1", "category2"]
     '''
 
-    #response = List[{'_index','_type','_id','_score', '_source':{'title','description','titleNdescription','URL','date'}}]
+    #response = List[{'_index','_type','_id','_score', '_source':{"title", "titleNdescription", "context", "URL", "date", "category1", "category2"}}]
     response = requests.get(f"http://27.96.131.161:30001/new_search/{company_name}/?query_sentence={company_name}&index_name=bigkinds_new2&field=titleNdescription&date_gte={date_gte}&date_lte={date_lte}").json()
-    # 데이터프레임으로 변환 news_df = ['title','description','titleNdescription','URL','date']
+    # 데이터프레임으로 변환 news_df = ["title", "titleNdescription", "context", "URL", "date", "category1", "category2"]
     news_df = defaultdict(list)
     for idx in range(len(response)):
         response_source = response[idx]['_source']

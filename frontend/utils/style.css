@@ -1,4 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Carter+One&display=swap');
+
+h1.brand{
+    font-family: 'Carter One', cursive;
+    text-align: center;
+}
 p{
     font-family: 'Nanum Gothic', sans-serif;
 }
@@ -9,7 +15,6 @@ button.css-1x8cf1d.edgvbvh10{
     border-radius: 20px;
     /*height: 250px;*/
 }
-
 div.appview-container.css-1wrcr25.egzxvld6{
     display: flex;
     justify-content: center;

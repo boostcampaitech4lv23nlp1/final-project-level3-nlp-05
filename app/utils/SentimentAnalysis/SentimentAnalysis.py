@@ -6,9 +6,6 @@ import sys
 from pathlib import Path
 ASSETS_DIR_PATH = os.path.join(Path(__file__).parent, "")
 
-#epoch10 = "step_saved_model/klue-roberta-base/27-01-53/checkpoint-2000/pytorch_model.bin"
-#epoch5
-#epoch7 = "best_model/klue-roberta-base/30-05-22/pytorch_model.bin"
 class TopicSentimentAnalysis():
     def __init__(self):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -22,6 +19,10 @@ class TopicSentimentAnalysis():
     def num_to_label(self, labels):
         """
         숫자로 되어 있던 class를 원본 문자열 라벨로 변환 합니다.
+        intput
+            labels : List[int]  # 감성분석 [0, 1, 2, 2...]
+        output
+            output : List[string]   #감성분석 [negative, neutral, positive, positve]
         """
         origin_label = {0 : "negative", 1 : "neutral", 2 : "positive"}
         output = []
@@ -30,6 +31,13 @@ class TopicSentimentAnalysis():
         return output
 
     def piplines(self, text_list):
+        ''''
+        한 줄 요약에 대해 감성분석 진행
+        input 
+            test_list : List[string]    # 한 줄 요약
+        output 
+            result : List[string]   # 감성분석 결과(positive, neutral, negative)
+        '''
         inputs = self.tokenizer(text_list, padding=True, truncation=True, return_tensors="pt").to(self.device)
         outputs = self.model(**inputs)
         predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
@@ -40,16 +48,22 @@ class TopicSentimentAnalysis():
         return result
 
     def sentiment_analysis(self, df):
+        '''
+        dataframe으로 들어온 데이터에 대해 감성분석을 진행하고 
+        다시 dataframe으로 변환
+        input
+            df : pd.DataFrame()
+        '''
         output = self.piplines(list(df['one_sent']))
         output = pd.DataFrame(output,columns=['sentiment'])
         output = pd.concat([df,output],axis=1)
         return output
 
+# test용 코드
 if __name__ == "__main__":
-    text = ["테크노폴리스는 컴퓨터 기술과 통신 분야에서 일하는 회사들을 유치하기 위해 10만 평방미터 이상의 면적을 단계적으로 개발할 계획이라고 성명은 밝혔다."]
     test_df = pd.read_csv("sentiment.csv")
     test_df = test_df.reset_index(drop=True)
     TSA = TopicSentimentAnalysis()    
     output = TSA.sentiment_analysis(test_df)
-    output.to_csv("sentiment.csv",index=False)
+    #output.to_csv("sentiment.csv",index=False)
     print(output)
