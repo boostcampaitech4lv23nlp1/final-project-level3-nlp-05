@@ -1,5 +1,8 @@
 # 📰 NEWS.tar
 
+[![Hits](https://hits.sh/github.com/silentsoft/hits.svg)](https://hits.sh/github.com/silentsoft/hits/)
+
+
 ## Table of content
 
 * Intro : 팀 소개/ 프로젝스 소개(문제 정의) / 개발 목표
