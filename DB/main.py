@@ -1,54 +1,62 @@
 from typing import Optional
+from enum import Enum
 from fastapi import FastAPI
 
-from Database.data_insert import DataInsert
-from utils import NewsCluster, RemoveDup
+from Database.elastic_db import ElasticDB
 
 import pickle
-from omegaconf import OmegaConf
-cfgs = OmegaConf.load(f"./Database/config/base_config.yaml")
 
 app = FastAPI()
-#DI = DataInsert('bigkinds_newsdata')
-DI = DataInsert(cfgs)
-newscluster = NewsCluster()
-removedup = RemoveDup()
+DI = ElasticDB()
+
+class IndexName(str, Enum):
+    bigkinds_new2 = "bigkinds_new2"
+    all_journal_newsdataset = "all_journal_newsdataset"
+
+
+class IndexField(str, Enum):
+    title = "title"
+    titleNdescription = "titleNdescription"
+    context = "context"
+
 
 @app.get("/")
 async def root():
     return {"message": "Financial News dataset server"}
 
-# get은 pydantic으로 안되나 본데
-@app.get('/search/{query}')
-def search_news(query_sentence: str,
-                date_gte: Optional[int] = None,
-                date_lte: Optional[int] = None,
-                topk: Optional[int] = 9999,
-                cluster : Optional[bool] = False,
-                num_clusters : Optional[int] = 10):
 
-    query_result = DI.search(query_sentence=query_sentence, date_gte=date_gte, date_lte=date_lte, topk=topk)
+@app.get("/search/{query_sentence}")
+def search_news(
+    query_sentence: str,
+    date_gte: Optional[int] = None,
+    date_lte: Optional[int] = None,
+    topk: Optional[int] = 9999,
+):
 
-    if cluster:
-        output = newscluster.cluster(data = query_result['hits']['hits'], num_clusters=num_clusters)
-        return output
-    else:
-        return query_result['hits']['hits']
+    query_result = DI.search(
+        query_sentence=query_sentence, date_gte=date_gte, date_lte=date_lte, topk=topk
+    )
 
-@app.get('/RemoveDup')
-def remove_dup(data):
+    return query_result["hits"]["hits"]
 
-    with open("tmp.pickle","rb") as fr:
-        data = pickle.load(fr)
 
-    tmp_list = []
-    for each in data:
-        tmp_list.append(each['_source'])
+@app.get("/new_search/{query_sentence}")
+def new_search_news(
+    query_sentence: str,
+    index_name: IndexName,
+    field: IndexField,
+    date_gte: Optional[int] = None,
+    date_lte: Optional[int] = None,
+    topk: Optional[int] = 9999,
+):
 
-    df = pd.DataFrame(tmp_list)
-    tmp_df = df.loc[df.label == 3]
-    title_N_desc = tmp_df['titleNdescription'].tolist()
+    query_result = DI.new_search(
+        query_sentence=query_sentence,
+        field=field,
+        date_gte=date_gte,
+        date_lte=date_lte,
+        topk=topk,
+        index_name=index_name,
+    )
 
-    output = removedup.remove_dup(title_N_desc)
-
-    return output
+    return query_result["hits"]["hits"]
