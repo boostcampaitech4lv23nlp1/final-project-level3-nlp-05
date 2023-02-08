@@ -116,7 +116,7 @@
 ### 시연영상
 [영상 추가 필요]
 
-### Conclution & 후속 개발
+### Conclusion & 후속 개발
 [파일로 추가 예정]
 
 ## Appendix
