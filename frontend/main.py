@@ -107,8 +107,9 @@ def search_page():
                 # 회사이름 검색 요청
                 # 1. 크롤링
                 news_df = bring_news(company_name, start_date ,end_date)
-                # 2. 뉴스가 없으면 끝 아니면 토픽 분류에서 감성 분석까지 진행
-                if len(news_df) == 0:
+                # 2. 뉴스가 적으면 끝 아니면 토픽 분류에서 감성 분석까지 진행
+                if len(news_df) < 10:
+                    news_df = pd.DataFrame()
                     topic_df = pd.DataFrame()
                 else:
                     news_json = news_df.to_json(orient="columns", force_ascii=False)
