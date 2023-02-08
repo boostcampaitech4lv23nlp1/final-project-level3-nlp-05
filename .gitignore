@@ -172,4 +172,10 @@ poetry.toml
 
 #News3paper3kCrawl/
 DB/archive
+app/utils/KorBertSum/001_bert_morp_pytorch/
+
+app/utils/KorBertSum/bert_models/bert_classifier2/
+app/utils/KorBertSum/bert_models/bert_classifier/
+app/utils/KorBertSum/tmp/
+app/utils/SentimentAnalysis/*.bin
 DB/Database/airflow/logs
