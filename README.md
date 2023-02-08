@@ -111,23 +111,14 @@
 * 한줄로 요약된 클러스터된 토픽 클릭 -> 클러스링된 뉴스들을 추출 요약
 <img src="./asset/extractiv.gif" width=70% height=50%>
 
-## Result / Conclusion
+## Result / Conclusion / Appendix
 
 ### 시연영상
 [![NEWS.tar](http://img.youtube.com/vi/2MKtPHJJ-PA/0.jpg)](https://youtu.be/2MKtPHJJ-PA?t=0s) 
 
-### Conclusion & 후속 개발
-[파일로 추가 예정]
-
-## Appendix
-
-[파일로 추가 예정]
-
-### 레슨런
-* 실제 서비스를 구축한다는 생각으로 데이터 파이프라인 구축 및 자동화 작업
-
-### 예상 Q&A
-* 실제 서비스라면 데이터에 대한 저작권 및 그 비용은?
+### Conclusion & 후속 개발 & Appendix
+5,6 문단 참조 <br>
+최종 발표 자료 : [발표자료](./asset/NEW.tar_발표자료.pdf)
 
 ## Reference
 - Grootendorst, Maarten. "BERTopic: Neural topic modeling with a class-based TF-IDF procedure." arXiv preprint arXiv:2203.05794 (2022).
