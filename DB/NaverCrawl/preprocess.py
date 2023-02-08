@@ -1,35 +1,57 @@
 import pandas as pd
 import numpy as np
 import re
-#import kss
+
+# import kss
 from soynlp.normalizer import *
 from collections import OrderedDict
-#from pykospacing import Spacing
+
+from pykospacing import Spacing
 from hanspell import spell_checker
-#from konlpy.tag import Mecab
 
-class Preprocess():
+from nltk import word_tokenize, sent_tokenize
 
+from konlpy.tag import Mecab
+
+import time
+class Preprocess:
     def __init__(self):
-        
+
         #self.spacing = Spacing()
         self.excluded_words = ["이하 뉴스1", "이 줄은 실제 뉴스"]
-        #self.mecab = Mecab()
+        self.mecab = Mecab()
 
-    def _split_context(self,texts):
+    def _remove_bold(self, texts):
 
-        context = texts.split('\n')
-        # sents = []
+        texts = texts.replace('<b>','')
+        texts = texts.replace('</b>','')
 
-        # for sent in context:
-        #     sent = sent.strip()
-        #     if sent:
-        #         splited_sent = kss.split_sentences(sent)
-        #         sents.extend(splited_sent)
+        return texts
 
+    def _remove_url_email(self, texts):
+        pattern_email = re.compile(r'[-_0-9a-z]+@[-_0-9a-z]+(?:\.[0-9a-z]+)+', flags=re.IGNORECASE)
+        pattern_url = re.compile(r'(?:https?:\/\/)?[-_0-9a-z]+(?:\.[-_0-9a-z]+)+', flags=re.IGNORECASE)
+        texts = pattern_email.sub('', texts)
+        texts = pattern_url.sub('', texts)
+
+        return texts
+
+    def _remove_bracket(self, texts):
+
+        pattern_bracket = re.compile(r'^((?:\[.+\])|(?:【.+】)|(?:<.+>)|(?:◆.+◆)\s)')
+        texts = pattern_bracket.sub('', texts).strip()
+
+        return texts
+
+    def _split_context(self, texts):
+
+        #context = texts.split("\n")
+
+        context = sent_tokenize(texts)
         return context
-    
+
     def _remove_html(self, texts):
+
         """
         HTML 태그를 제거합니다.
         ``<p>안녕하세요 ㅎㅎ </p>`` -> ``안녕하세요 ㅎㅎ ``
@@ -40,7 +62,7 @@ class Preprocess():
             if text:
                 preprocessed_text.append(text)
         return preprocessed_text
-    
+
     def _remove_email(self, texts):
         """
         이메일을 제거합니다.
@@ -48,7 +70,9 @@ class Preprocess():
         """
         preprocessed_text = []
         for text in texts:
-            text = re.sub(r"[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "", text).strip()
+            text = re.sub(
+                r"[a-zA-Z0-9+-_.]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", "", text
+            ).strip()
             if text:
                 preprocessed_text.append(text)
         return preprocessed_text
@@ -112,7 +136,7 @@ class Preprocess():
         """
         re_patterns = [
             r"\([^(]*?(뉴스|경제|일보|미디어|데일리|한겨례|타임즈|위키트리)\)",
-            r"[가-힣]{0,4} (기자|선임기자|수습기자|특파원|객원기자|논설고문|통신원|연구소장) ",  # 이름 + 기자
+            r"[가-힣]{0,5} (기자|선임기자|수습기자|특파원|객원기자|논설고문|통신원|연구소장) ",  # 이름 + 기자
             r"[가-힣]{1,}(뉴스|경제|일보|미디어|데일리|한겨례|타임|위키트리)",  # (... 연합뉴스) ..
             r"\(\s+\)",  # (  )
             r"\(=\s+\)",  # (=  )
@@ -124,7 +148,7 @@ class Preprocess():
             for re_pattern in re_patterns:
                 text = re.sub(re_pattern, "", text).strip()
             if text:
-                preprocessed_text.append(text)    
+                preprocessed_text.append(text)
         return preprocessed_text
 
     def _remove_copyright(self, texts):
@@ -134,14 +158,14 @@ class Preprocess():
         """
         re_patterns = [
             r"\<저작권자(\(c\)|ⓒ|©|\(Copyright\)|(\(c\))|(\(C\))).+?\>",
-            r"저작권자\(c\)|ⓒ|©|(Copyright)|(\(c\))|(\(C\))"
+            r"저작권자\(c\)|ⓒ|©|(Copyright)|(\(c\))|(\(C\))",
         ]
         preprocessed_text = []
         for text in texts:
             for re_pattern in re_patterns:
                 text = re.sub(re_pattern, "", text).strip()
             if text:
-                preprocessed_text.append(text)    
+                preprocessed_text.append(text)
         return preprocessed_text
 
     def _remove_photo_info(self, texts):
@@ -152,7 +176,11 @@ class Preprocess():
         """
         preprocessed_text = []
         for text in texts:
-            text = re.sub(r"\(출처 ?= ?.+\) |\(사진 ?= ?.+\) |\(자료 ?= ?.+\)| \(자료사진\) |사진=.+기자 ", "", text).strip()
+            text = re.sub(
+                r"\(출처 ?= ?.+\) |\(사진 ?= ?.+\) |\(자료 ?= ?.+\)| \(자료사진\) |사진=.+기자 ",
+                "",
+                text,
+            ).strip()
             if text:
                 preprocessed_text.append(text)
         return preprocessed_text
@@ -213,9 +241,37 @@ class Preprocess():
         return preprocessed_text
 
     def _clean_punc(self, texts):
-        punct_mapping = {"‘": "'", "₹": "e", "´": "'", "°": "", "€": "e", "™": "tm", "√": " sqrt ", "×": "x", "²": "2", "—": "-", "–": "-", \
-            "’": "'", "_": "-", "`": "'", '“': '"', '”': '"', '“': '"', "£": "e", '∞': 'infinity', 'θ': 'theta', '÷': '/', 'α': 'alpha', '•': '.', \
-                'à': 'a', '−': '-', 'β': 'beta', '∅': '', '³': '3', 'π': 'pi', }
+        punct_mapping = {
+            "‘": "'",
+            "₹": "e",
+            "´": "'",
+            "°": "",
+            "€": "e",
+            "™": "tm",
+            "√": " sqrt ",
+            "×": "x",
+            "²": "2",
+            "—": "-",
+            "–": "-",
+            "’": "'",
+            "_": "-",
+            "`": "'",
+            "“": '"',
+            "”": '"',
+            "“": '"',
+            "£": "e",
+            "∞": "infinity",
+            "θ": "theta",
+            "÷": "/",
+            "α": "alpha",
+            "•": ".",
+            "à": "a",
+            "−": "-",
+            "β": "beta",
+            "∅": "",
+            "³": "3",
+            "π": "pi",
+        }
 
         preprocessed_text = []
         for text in texts:
@@ -237,7 +293,7 @@ class Preprocess():
             if text:
                 preprocessed_text.append(text)
         return preprocessed_text
-        
+
     def _remove_dup_sent(self, texts):
         """
         중복된 문장을 제거합니다.
@@ -245,16 +301,16 @@ class Preprocess():
         texts = list(OrderedDict.fromkeys(texts))
         return texts
 
-    # def _spacing_sent(self, texts):
-    #     """
-    #     띄어쓰기를 보정합니다.
-    #     """
-    #     preprocessed_text = []
-    #     for text in texts:
-    #         text = self.spacing(text)
-    #         if text:
-    #             preprocessed_text.append(text)
-    #     return preprocessed_text
+    def _spacing_sent(self, texts):
+        """
+        띄어쓰기를 보정합니다.
+        """
+        preprocessed_text = []
+        for text in texts:
+            text = self.spacing(text)
+            if text:
+                preprocessed_text.append(text)
+        return preprocessed_text
 
     def _spell_check_sent(self, texts):
         """
@@ -264,14 +320,13 @@ class Preprocess():
         for text in texts:
             try:
                 spelled_sent = spell_checker.check(text)
-                checked_sent = spelled_sent.checked 
+                checked_sent = spelled_sent.checked
                 if checked_sent:
                     preprocessed_text.append(checked_sent)
             except:
                 preprocessed_text.append(text)
         return preprocessed_text
 
-    
     def _excluded_word_filter(self, texts):
         """
         특정 단어를 포함하는 문장 필터링
@@ -287,56 +342,65 @@ class Preprocess():
                 preprocessed_text.append(text)
         return preprocessed_text
 
+    # def _additional_filter(self, texts):
 
-    # def _morph_filter(self, texts):
-    #     """
-    #     명사(NN), 동사(V), 형용사(J)의 포함 여부에 따라 문장 필터링
-    #     """
-    #     NN_TAGS = ["NNG", "NNP", "NNB", "NP"]
-    #     V_TAGS = ["VV", "VA", "VX", "VCP", "VCN", "XSN", "XSA", "XSV"]
-    #     J_TAGS = ["JKS", "J", "JO", "JK", "JKC", "JKG", "JKB", "JKV", "JKQ", "JX", "JC", "JKI", "JKO", "JKM", "ETM"]
 
     #     preprocessed_text = []
     #     for text in texts:
-    #         morphs = self.mecab.pos(text, join=False)
 
-    #         nn_flag = False
-    #         v_flag = False
-    #         j_flag = False
-    #         for morph in morphs:
-    #             pos_tags = morph[1].split("+")
-    #             for pos_tag in pos_tags:
-    #                 if not nn_flag and pos_tag in NN_TAGS:
-    #                     nn_flag = True
-    #                 if not v_flag and pos_tag in V_TAGS:
-    #                     v_flag = True
-    #                 if not j_flag and pos_tag in J_TAGS:
-    #                     j_flag = True
-    #             if nn_flag and v_flag and j_flag:
-    #                 preprocessed_text.append(text)
-    #                 break
-    #     return preprocessed_text
-    
+    def _morph_filter(self, texts):
+        """
+        명사(NN), 동사(V), 형용사(J)의 포함 여부에 따라 문장 필터링
+        """
+        NN_TAGS = ["NNG", "NNP", "NNB", "NP"]
+        V_TAGS = ["VV", "VA", "VX", "VCP", "VCN", "XSN", "XSA", "XSV"]
+        J_TAGS = ["JKS", "J", "JO", "JK", "JKC", "JKG", "JKB", "JKV", "JKQ", "JX", "JC", "JKI", "JKO", "JKM", "ETM"]
+
+        preprocessed_text = []
+        for text in texts:
+            morphs = self.mecab.pos(text, join=False)
+
+            nn_flag = False
+            v_flag = False
+            j_flag = False
+            for morph in morphs:
+                pos_tags = morph[1].split("+")
+                for pos_tag in pos_tags:
+                    if not nn_flag and pos_tag in NN_TAGS:
+                        nn_flag = True
+                    if not v_flag and pos_tag in V_TAGS:
+                        v_flag = True
+                    if not j_flag and pos_tag in J_TAGS:
+                        j_flag = True
+                if nn_flag and v_flag and j_flag:
+                    preprocessed_text.append(text)
+                    break
+        return preprocessed_text
+
     def _remove_stopwords(self, sents):
         #  큰 의미가 없는 불용어 정의
         #  사용자가 자체적으로 stopwords를 정희하면 될 듯
-        stopwords = ['소취요', '-', '조드윅', '포스터', '앓는', '서린']
+        stopwords = ["소취요", "-", "조드윅", "포스터", "앓는", "서린"]
         preprocessed_text = []
         for sent in sents:
-            sent = [w for w in sent.split(' ') if w not in stopwords]# 불용어 제거
-            preprocessed_text.append(' '.join(sent))
+            sent = [w for w in sent.split(" ") if w not in stopwords]  # 불용어 제거
+            preprocessed_text.append(" ".join(sent))
         return preprocessed_text
 
     def __call__(self, text):
 
         if text != None:
 
-            context = self._split_context(text)
+            context = text
+            context = self._remove_bold(context)
+            context = self._remove_url_email(context)
+            context = self._remove_bracket(context)
+            context = self._split_context(context)
             context = self._remove_html(context)
-            context = self._remove_email(context)
+            #context = self._remove_email(context)
             context = self._remove_hashtag(context)
             context = self._remove_user_mention(context)
-            context = self._remove_url(context)
+            #context = self._remove_url(context)
             context = self._remove_bad_char(context)
             context = self._remove_press(context)
             context = self._remove_copyright(context)
@@ -345,13 +409,26 @@ class Preprocess():
             context = self._remove_repeat_char(context)
             context = self._clean_punc(context)
             context = self._remove_repeated_spacing(context)
-            # context = self._remove_dup_sent(context)
-            # context = self._spacing_sent(context)
+            context = self._remove_dup_sent(context)
+            # #context = self._spacing_sent(context)
             # context = self._spell_check_sent(context)
             # context = self._excluded_word_filter(context)
             # context = self._remove_stopwords(context)
-            
-            return ' '.join(context)
-    
+            # context = self._morph_filter(context)
+
+            return context
+
         else:
             return None
+
+if __name__ == '__main__':
+
+    sample = pd.read_pickle('sample.pkl')
+    prepro = Preprocess()
+
+    start_time = time.time()
+    result = prepro(sample.iloc[0])
+    end_time = time.time()
+    
+    print(result)
+    print('time check', end_time - start_time)

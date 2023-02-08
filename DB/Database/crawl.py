@@ -1,3 +1,6 @@
+"""
+This file is deprecated
+"""
 import os
 import gdown
 import zipfile
@@ -17,7 +20,7 @@ class CrawlNews:
     def crawl_from_file(self):
 
         base_url = "https://drive.google.com/uc?id="
-        data_folder_id = "1KwAa1Huh7b4D3Mp6L0OFSjUrxum7b1an"  # Shared dataset folder id in my google drive
+        data_folder_id = ""
         url = "".join([base_url, data_folder_id])
         output_name = self.download_dataset
 
@@ -47,7 +50,6 @@ class CrawlNews:
             http_str = ("http://", "https://")
 
             if not x.startswith(http_str):
-                print("not startwith https")
                 return "http://" + x
             else:
                 return x

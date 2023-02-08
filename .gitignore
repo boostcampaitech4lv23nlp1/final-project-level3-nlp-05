@@ -171,4 +171,5 @@ poetry.toml
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 #News3paper3kCrawl/
-DB/Database/Financial_news
+DB/archive
+DB/Database/airflow/logs
