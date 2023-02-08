@@ -114,7 +114,7 @@
 ## Result / Conclusion
 
 ### 시연영상
-[영상 추가 필요]
+[![NEWS.tar](http://img.youtube.com/vi/2MKtPHJJ-PA/0.jpg)](https://youtu.be/2MKtPHJJ-PA?t=0s) 
 
 ### Conclusion & 후속 개발
 [파일로 추가 예정]
