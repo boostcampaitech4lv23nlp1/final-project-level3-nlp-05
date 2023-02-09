@@ -4,12 +4,18 @@ final-project-level3-nlp-05 폴더 내에서 `streamlit run frontend/main.py --s
 # Backend 실행
 final-project-level3-nlp-05 폴더 내에서 `python -m app` 실행
 
+# KoBert 사용
+```
+pip install git+https://git@github.com/SKTBrain/KoBERT.git@master
+```
+
 # 버토픽 gpu에서 실행하기
 ```
 pip install cupy-cuda11x
 pip install cuml-cu11 --extra-index-url=https://pypi.ngc.nvidia.com
 pip install cupy-cuda110
 ```
+
 # KorBertSum setting
 - `app/utils/KorBertSum` 에서 001_bert_morp_pytorch.zip 앞축해제
 ```
@@ -22,21 +28,34 @@ pip install cupy-cuda110
 │   └──model_step_35000.pt
 ```
 
-# KoBert 사용
+# SentimentAnalysis setting
+- `app/utils/KorBertSum` 에서 pytorch_model_10.zip 앞축해제
 ```
-pip install git+https://git@github.com/SKTBrain/KoBERT.git@master
+📁app/utils/SentimentAnalysis
+│   └──pytorch_model_10.bin
 ```
-# 파일 구성
+
+# 프로젝트 전체 파일 구성
 ```
 📁app
-│   └── __main__.py # Backend 서버 실행 파일
-│   └── main.py #Backend 파일
-│   └──📁utils #크롤링, 요약, 모델실행 등
-│       └──📁BERTopic   #topic 추출
-│       └──📁KorBertSum #문단요약(추출요약, 생성요약)
-│       └── Bigkindscrawl.py # DB 서버로부터 크롤링 데이터 추출
-│       └── One_sent_summarization.py  #한줄요약
-📁front
+│   └── utils
+│   |    └── 📁BERTopic # 토픽 분류
+│   |    └── 📁One_sent_summary # 한 줄 요약
+│   |    └── 📁SentimentAnalysis  # 감성 분석
+│   |    └── 📁KorBertSum # 토픽 내 뉴스 요약
+│   └── __main__.py # Backend 실행 파일
+│   └── main.py #Backend
+│
+📁frontend
+│   |    └── 📁assets
+│   |    └── 📁utils 
+|   │    |    └── BringNews.py # DB에서 뉴스 가져오기
 │   └── main.py #Frontend
-│   └── style.css # Frontend css 파일
+│
+📁DB
+│   └── 📁Database
+│   └── utils.py 
+│   └── main.py 
+│
+📁sentiment_analysis_train # 감성 분석 학습 코드
 ```
