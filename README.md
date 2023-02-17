@@ -116,6 +116,10 @@
 ### 시연영상
 [![NEWS.tar](http://img.youtube.com/vi/2MKtPHJJ-PA/0.jpg)](https://youtu.be/2MKtPHJJ-PA?t=0s) 
 
+
+### 발표영상
+[![NEWS.tar](http://img.youtube.com/vi/2MKtPHJJ-PA/0.jpg)](https://www.youtube.com/watch?v=mfzxberMf8g) 
+
 ### Conclusion & 후속 개발 & Appendix
 5,6 문단 참조 <br>
 최종 발표 자료 : [발표자료](./asset/NEW.tar_발표자료.pdf)
